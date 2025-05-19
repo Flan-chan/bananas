@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, session, desktopCapturer } from 'electron'
+import { app, shell, BrowserWindow, session, desktopCapturer, globalShortcut, screen } from 'electron'
 import path from 'path'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -10,6 +10,37 @@ import { isInProductionMode } from './utils'
 const CUSTOM_PROTOCOL = 'bananas'
 
 let MAIN_WINDOW: BrowserWindow
+
+// State for window movement
+let currentX = 0
+let currentY = 0
+let windowSize = { width: 800, height: 600 }
+let screenHeight = 0
+
+function updateWindowState() {
+  if (!MAIN_WINDOW) return
+  const [x, y] = MAIN_WINDOW.getPosition()
+  const [width, height] = MAIN_WINDOW.getSize()
+  currentX = x
+  currentY = y
+  windowSize = { width, height }
+  screenHeight = screen.getPrimaryDisplay().workAreaSize.height
+}
+
+function moveWindowHorizontal(updateFn: (x: number) => number) {
+  if (!MAIN_WINDOW) return
+  currentX = updateFn(currentX)
+  MAIN_WINDOW.setPosition(Math.round(currentX), Math.round(currentY))
+}
+
+function moveWindowVertical(updateFn: (y: number) => number) {
+  if (!MAIN_WINDOW) return
+  const newY = updateFn(currentY)
+  const maxUpLimit = (-(windowSize.height || 0) * 2) / 3
+  const maxDownLimit = screenHeight + ((windowSize.height || 0) * 2) / 3
+  currentY = Math.max(Math.min(newY, maxDownLimit), maxUpLimit)
+  MAIN_WINDOW.setPosition(Math.round(currentX), Math.round(currentY))
+}
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -59,6 +90,9 @@ async function createWindow(): Promise<void> {
     y: mainWindowState.y,
     show: false,
     autoHideMenuBar: true,
+    transparent: true, // Enable window transparency for glassmorphism
+    backgroundColor: '#00000000', // Make the window background fully transparent
+    frame: false, // Disable window frame for transparency support
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -97,6 +131,24 @@ async function createWindow(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
+  // Register window movement shortcuts
+  globalShortcut.register('CommandOrControl+Left', () => {
+    updateWindowState()
+    moveWindowHorizontal(x => x - 50)
+  })
+  globalShortcut.register('CommandOrControl+Right', () => {
+    updateWindowState()
+    moveWindowHorizontal(x => x + 50)
+  })
+  globalShortcut.register('CommandOrControl+Up', () => {
+    updateWindowState()
+    moveWindowVertical(y => y - 50)
+  })
+  globalShortcut.register('CommandOrControl+Down', () => {
+    updateWindowState()
+    moveWindowVertical(y => y + 50)
+  })
+
   electronApp.setAppUserModelId('net.getbananas')
 
   app.on('browser-window-created', (_, window) => {
