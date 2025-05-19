@@ -156,6 +156,7 @@ async function createWindow(): Promise<void> {
   MAIN_WINDOW.on('ready-to-show', () => {
     MAIN_WINDOW.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     MAIN_WINDOW.setAlwaysOnTop(true, 'screen-saver'); // Keep on top, screen-saver level
+    MAIN_WINDOW.setContentProtection(true); // Prevent screen capture
     MAIN_WINDOW.setOpacity(0.7); // Default semi-transparent visible state
     MAIN_WINDOW.show();
   })
