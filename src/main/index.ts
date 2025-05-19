@@ -111,6 +111,7 @@ async function createWindow(): Promise<void> {
   })
 
   MAIN_WINDOW.on('ready-to-show', () => {
+    MAIN_WINDOW.setAlwaysOnTop(true, 'floating')
     MAIN_WINDOW.show()
   })
 
