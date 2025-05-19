@@ -9,3 +9,12 @@ span.color-picker div.wrapper.is-open {
 div.swal2-container div.swal2-popup {
   background-color: var(--bulma-background);
 }
+
+html, body, #app, .container, .content, .box, .section, .hero, .columns, .column {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#app {
+  opacity: 0.75; /* Adjust this value as needed (0.0 to 1.0) */
+}

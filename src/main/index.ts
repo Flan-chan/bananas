@@ -112,6 +112,7 @@ async function createWindow(): Promise<void> {
 
   MAIN_WINDOW.on('ready-to-show', () => {
     MAIN_WINDOW.setAlwaysOnTop(true, 'floating')
+    MAIN_WINDOW.setOpacity(0.5)
     MAIN_WINDOW.show()
   })
 
@@ -120,6 +121,8 @@ async function createWindow(): Promise<void> {
     return { action: 'deny' }
   })
 
+  // HMR for renderer base on electron-vite cli.
+  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     MAIN_WINDOW.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
