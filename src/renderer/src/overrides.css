@@ -16,5 +16,5 @@ html, body, #app, .container, .content, .box, .section, .hero, .columns, .column
 }
 
 #app {
-  opacity: 0.75; /* Adjust this value as needed (0.0 to 1.0) */
+  opacity: 0.7; /* Adjust this value as needed (0.0 to 1.0) */
 }
