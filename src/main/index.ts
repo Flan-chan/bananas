@@ -17,6 +17,11 @@ let currentY = 0
 let windowSize = { width: 800, height: 600 }
 let screenHeight = 0
 
+// State for window visibility toggle
+let isWindowVisible = true
+let windowPositionBeforeHidden: { x: number; y: number } | null = null
+let windowSizeBeforeHidden: { width: number; height: number } | null = null
+
 function updateWindowState() {
   if (!MAIN_WINDOW) return
   const [x, y] = MAIN_WINDOW.getPosition()
@@ -40,6 +45,41 @@ function moveWindowVertical(updateFn: (y: number) => number) {
   const maxDownLimit = screenHeight + ((windowSize.height || 0) * 2) / 3
   currentY = Math.max(Math.min(newY, maxDownLimit), maxUpLimit)
   MAIN_WINDOW.setPosition(Math.round(currentX), Math.round(currentY))
+}
+
+// Functions for toggling window visibility
+function hideMainWindow(): void {
+  if (MAIN_WINDOW && !MAIN_WINDOW.isDestroyed()) {
+    const bounds = MAIN_WINDOW.getBounds()
+    windowPositionBeforeHidden = { x: bounds.x, y: bounds.y }
+    windowSizeBeforeHidden = { width: bounds.width, height: bounds.height } // Though not strictly needed if we don't move/resize
+    MAIN_WINDOW.setIgnoreMouseEvents(true, { forward: true })
+    MAIN_WINDOW.setOpacity(0) // Make it fully invisible
+    isWindowVisible = false
+    console.log('Window hidden, opacity set to 0')
+  }
+}
+
+function showMainWindow(): void {
+  if (MAIN_WINDOW && !MAIN_WINDOW.isDestroyed()) {
+    MAIN_WINDOW.setOpacity(0.7) // Restore to the default semi-transparent state
+    MAIN_WINDOW.setIgnoreMouseEvents(false)
+    // Optionally restore position/size if they could change while hidden
+    // if (windowPositionBeforeHidden && windowSizeBeforeHidden) {
+    //   MAIN_WINDOW.setBounds({ ...windowPositionBeforeHidden, ...windowSizeBeforeHidden })
+    // }
+    isWindowVisible = true
+    console.log('Window shown, opacity set to 0.7')
+  }
+}
+
+function toggleMainWindow(): void {
+  console.log(`Toggling window. Current state: ${isWindowVisible ? 'visible' : 'hidden'}`)
+  if (isWindowVisible) {
+    hideMainWindow()
+  } else {
+    showMainWindow()
+  }
 }
 
 if (process.defaultApp) {
@@ -90,9 +130,12 @@ async function createWindow(): Promise<void> {
     y: mainWindowState.y,
     show: false,
     autoHideMenuBar: true,
-    transparent: true, // Enable window transparency for glassmorphism
+    transparent: true, // Enable window transparency
     backgroundColor: '#00000000', // Make the window background fully transparent
-    frame: false, // Disable window frame for transparency support
+    frame: false, // Disable window frame
+    skipTaskbar: true, // Do not show in taskbar/dock
+    focusable: true, // Ensure panel can be focused
+    ...(process.platform === 'darwin' ? { type: 'panel' } : {}), // macOS specific panel type
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -111,9 +154,10 @@ async function createWindow(): Promise<void> {
   })
 
   MAIN_WINDOW.on('ready-to-show', () => {
-    MAIN_WINDOW.setAlwaysOnTop(true, 'floating')
-    MAIN_WINDOW.setOpacity(0.5)
-    MAIN_WINDOW.show()
+    MAIN_WINDOW.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    MAIN_WINDOW.setAlwaysOnTop(true, 'screen-saver'); // Keep on top, screen-saver level
+    MAIN_WINDOW.setOpacity(0.7); // Default semi-transparent visible state
+    MAIN_WINDOW.show();
   })
 
   MAIN_WINDOW.webContents.setWindowOpenHandler((details) => {
@@ -138,19 +182,25 @@ app.whenReady().then(async () => {
   // Register window movement shortcuts
   globalShortcut.register('CommandOrControl+Left', () => {
     updateWindowState()
-    moveWindowHorizontal(x => x - 50)
+    moveWindowHorizontal((x) => x - 20) // Move left by 20 pixels
   })
   globalShortcut.register('CommandOrControl+Right', () => {
     updateWindowState()
-    moveWindowHorizontal(x => x + 50)
+    moveWindowHorizontal((x) => x + 20) // Move right by 20 pixels
   })
   globalShortcut.register('CommandOrControl+Up', () => {
     updateWindowState()
-    moveWindowVertical(y => y - 50)
+    moveWindowVertical((y) => y - 20) // Move up by 20 pixels
   })
   globalShortcut.register('CommandOrControl+Down', () => {
     updateWindowState()
-    moveWindowVertical(y => y + 50)
+    moveWindowVertical((y) => y + 20) // Move down by 20 pixels
+  })
+
+  // Register shortcut for toggling window visibility
+  globalShortcut.register('CommandOrControl+\\', () => {
+    console.log('CommandOrControl+\\ pressed. Toggling window visibility.')
+    toggleMainWindow()
   })
 
   electronApp.setAppUserModelId('net.getbananas')

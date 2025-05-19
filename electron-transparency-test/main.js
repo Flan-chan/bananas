@@ -13,7 +13,7 @@ app.whenReady().then(() => {
   win.loadURL('data:text/html,<body style="background: transparent;"></body>')
 
   // Set overall window opacity
-  win.setOpacity(0.5)
+  win.setOpacity(0.75)
 
   win.on('ready-to-show', () => {
     win.show()
